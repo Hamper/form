@@ -141,7 +141,18 @@ func encodeStruct(v reflect.Value, z bool) interface{} {
 		} else if fv := v.Field(i); oe && isEmptyValue(fv) {
 			delete(n, k)
 		} else {
-			n[k] = encodeValue(fv, z)
+			ev := encodeValue(fv, z)
+			if k == "" {
+				if en, ok := ev.(node); ok {
+					for k, i := range en {
+						n[k] = i
+					}
+				} else { // fallback for simple types
+					n[f.Name] = ev
+				}
+			} else {
+				n[k] = ev
+			}
 		}
 	}
 	return n
@@ -268,11 +279,14 @@ func fieldInfo(f reflect.StructField) (k string, oe bool) {
 	k = f.Name
 	tag := f.Tag.Get("form")
 	if tag == "" {
+		if f.Anonymous {
+			return tag, oe
+		}
 		return k, oe
 	}
 
 	ps := strings.SplitN(tag, ",", 2)
-	if ps[0] != "" {
+	if ps[0] != "" || f.Anonymous {
 		k = ps[0]
 	}
 	if len(ps) == 2 {
