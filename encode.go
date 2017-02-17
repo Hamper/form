@@ -333,6 +333,9 @@ func findField(v reflect.Value, n string, ignoreCase bool) (reflect.Value, bool)
 		fv := v.Field(i)
 		fk := fv.Kind()
 		for fk == reflect.Ptr || fk == reflect.Interface {
+			if fv.IsNil() {
+				fv.Set(reflect.New(fv.Type().Elem()))
+			}
 			fv = fv.Elem()
 			fk = fv.Kind()
 		}
